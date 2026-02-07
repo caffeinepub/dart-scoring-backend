@@ -1,141 +1,62 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-07T22:10:03.544Z",
-  "summary": "The diff adds a Motoko backend actor and a themed frontend landing shell, but the backend is missing several required Candid data model types, stable upgrade persistence, Result-style error handling, configurable rules, and core scoring/scoreboard logic. Some additional frontend authentication/actor plumbing (Internet Identity + react-query hooks) is implemented beyond what was explicitly requested for a minimal landing scaffold.",
+  "generatedAt": "2026-02-07T23:10:27.164Z",
+  "summary": "The diff does not show any implementation of the requested Motoko canister HTTP routing changes (method+path routing, JSON endpoints, CORS headers, or OPTIONS handling). It mainly shows unrelated backend game logic content and an update to project_state.json.",
   "missing_requirements": [
     {
-      "id": "REQ-1",
-      "requirement": "Define Candid types for at least: Player, Game, GameRules, Throw, Turn, Leg (or Round), and GameStatus.",
-      "reason": "backend/main.mo defines Player/Game plus ThrowResult/TurnResult/GameState, but does not define GameRules, Leg/Round, or GameStatus (and uses ThrowResult rather than a Throw type).",
+      "id": "REQ-6",
+      "requirement": "Implement or fix `public query func http_request(req : HttpRequest) : async HttpResponse` in `backend/main.mo` to route using both `req.method` and the path component of `req.url` (ignoring query string).",
+      "reason": "The provided truncated `backend/main.mo` content does not include any `http_request` function or URL parsing/routing logic based on method+path.",
       "evidence": [
-        "backend/main.mo"
+        "backend/main.mo (truncated)"
       ]
     },
     {
-      "id": "REQ-1",
-      "requirement": "All stored data survives canister upgrades using stable variables (no external DB).",
-      "reason": "The diff shows in-memory `let` Maps for counters/players/games and no `stable var` usage for persistence across upgrades.",
+      "id": "REQ-7",
+      "requirement": "Add GET routes `/health`, `/auth/google/start`, and `/auth/google/callback` returning the specified JSON bodies with `Content-Type: application/json`.",
+      "reason": "No HTTP handler or routing table/switch is shown, and none of the specified paths or JSON payloads appear in the diff snippet.",
       "evidence": [
-        "backend/main.mo"
+        "backend/main.mo (truncated)"
       ]
     },
     {
-      "id": "REQ-2",
-      "requirement": "Expose query methods to list games and fetch a game by id (e.g., listGames, getGame).",
-      "reason": "Only `getGameState` is shown; the frontend hooks call `getAllGames`, but such a method is not present in the visible backend diff. No explicit listGames/getGame returning game view/state is evidenced.",
+      "id": "REQ-8",
+      "requirement": "For all other paths, return the existing HTML landing page (status 200, `Content-Type: text/html`).",
+      "reason": "No HTTP handler response logic is present in the shown diff snippet, so the HTML fallback behavior cannot be verified/appears unimplemented in the shown changes.",
       "evidence": [
-        "backend/main.mo",
-        "frontend/src/hooks/useQueries.ts"
+        "backend/main.mo (truncated)"
       ]
     },
     {
-      "id": "REQ-2",
-      "requirement": "Game creation supports configuring rules (at minimum: starting score, double-out on/off, max darts per turn).",
-      "reason": "`createGame(playerIds)` hardcodes starting score 501 and does not accept or store rule configuration; there is no GameRules type.",
+      "id": "REQ-9",
+      "requirement": "Add CORS headers to all JSON responses: `Access-Control-Allow-Origin: *`, `Access-Control-Allow-Methods: GET,POST,PUT,OPTIONS`, `Access-Control-Allow-Headers: Content-Type, Authorization, X-ADMIN-TOKEN`.",
+      "reason": "No JSON response construction or header-setting code is visible in the diff snippet.",
       "evidence": [
-        "backend/main.mo"
+        "backend/main.mo (truncated)"
       ]
     },
     {
-      "id": "REQ-2",
-      "requirement": "Provide API methods to create and query players (including listing/querying players).",
-      "reason": "Backend shows `createPlayer` but no query/list method for players is evidenced. Frontend calls `getAllPlayers`, but such a backend method is not shown.",
+      "id": "REQ-10",
+      "requirement": "Handle `OPTIONS` for any path by returning 204 with the specified CORS headers and an empty body.",
+      "reason": "No `OPTIONS` handling or generic preflight response logic is visible in the diff snippet.",
       "evidence": [
-        "backend/main.mo",
-        "frontend/src/hooks/useQueries.ts"
-      ]
-    },
-    {
-      "id": "REQ-3",
-      "requirement": "Record scoring events with validation of segment (1–20, bull) and multiplier (single/double/triple where applicable).",
-      "reason": "`recordThrow` validates only `value > 20 and value != 25` and `multiplier > 3`; it does not enforce multiplier legality for bull (e.g., triple bull invalid) or encode single/double/triple semantics as specified, and no standard segment model is present.",
-      "evidence": [
-        "backend/main.mo"
-      ]
-    },
-    {
-      "id": "REQ-3",
-      "requirement": "Score computation updates remaining score correctly, including bust handling with score revert and marking the turn as bust.",
-      "reason": "`recordThrow`/`recordTurn` only append to lists; they do not update `remainingScores/totalScores`, do not implement bust logic, and TurnResult lacks a bust marker.",
-      "evidence": [
-        "backend/main.mo"
-      ]
-    },
-    {
-      "id": "REQ-3",
-      "requirement": "If double-out is enabled, a leg/game can only be won when the finishing dart is a double (including double bull).",
-      "reason": "No rules configuration and no finishing/win logic is implemented; `isOver` is present but never updated based on scoring.",
-      "evidence": [
-        "backend/main.mo"
-      ]
-    },
-    {
-      "id": "REQ-3",
-      "requirement": "Expose a query method to retrieve the current scoreboard for a game (players, remaining scores, legs/sets if modeled, whose turn).",
-      "reason": "`getGameState` returns currentPlayer and scores but does not include player identities/details, legs/sets, or a dedicated scoreboard view as specified; no legs/sets model exists.",
-      "evidence": [
-        "backend/main.mo"
-      ]
-    },
-    {
-      "id": "REQ-4",
-      "requirement": "All update/query methods return Result-style variants (ok/err) and avoid traps on invalid input/ids/illegal transitions.",
-      "reason": "Methods return raw types (e.g., `async Player`, `async GameView`) and call `Runtime.trap(...)` on invalid input and missing game IDs.",
-      "evidence": [
-        "backend/main.mo"
-      ]
-    },
-    {
-      "id": "REQ-4",
-      "requirement": "IDs for games/players are unique and deterministic within the canister and stored stably (e.g., incrementing counters stored stably).",
-      "reason": "ID generation uses `Map.size()` on non-stable `let` maps; there is no stable counter variable shown, and the approach is not evidenced as upgrade-safe.",
-      "evidence": [
-        "backend/main.mo"
-      ]
-    },
-    {
-      "id": "REQ-4",
-      "requirement": "Provide basic authorization expectations: if no auth is implemented, document and enforce that any caller can create and update games (no hidden assumptions).",
-      "reason": "Backend methods accept `{ caller }` but do not document or enforce an authorization policy; no explicit statement/mechanism is evidenced.",
-      "evidence": [
-        "backend/main.mo"
+        "backend/main.mo (truncated)"
       ]
     }
   ],
   "hallucinated_features": [
     {
-      "description": "Internet Identity authentication provider/context and actor recreation logic (auth client, identity persistence, actor creation with identity).",
-      "reason": "REQ-5 only asked for a minimal landing scaffold/theme; authentication was a non-goal unless requested (II allowed but not required). The diff adds substantial auth plumbing not required for the landing page.",
+      "description": "Updated `project_state.json` to add/modify \"new_feature_requests\" entries (AR-1..AR-11) describing various features, including the requested HTTP routing tasks.",
+      "reason": "The BuildRequest only asks for backend HTTP handler changes in `backend/main.mo` (and explicitly notes no migration should be needed). It does not request updating project state metadata.",
       "evidence": [
-        "frontend/src/hooks/useInternetIdentity.ts",
-        "frontend/src/hooks/useActor.ts",
-        "frontend/src/main.tsx"
-      ]
-    },
-    {
-      "description": "React Query data hooks and mutations for players/games (useGetAllPlayers/useGetAllGames/useCreatePlayer/useCreateGame).",
-      "reason": "REQ-5 requested only a minimal landing page shell; these hooks add extra client-side data layer features beyond the landing scaffold.",
-      "evidence": [
-        "frontend/src/hooks/useQueries.ts"
+        "project_state.json (truncated)"
       ]
     }
   ],
-  "confidence": 0.78,
+  "confidence": 0.74,
   "changed_files": [
-    "all_files_summary.json",
     "backend/main.mo",
-    "frontend-file-summaries.txt",
-    "frontend/index.css",
-    "frontend/index.html",
-    "frontend/src/App.tsx",
-    "frontend/src/hooks/useActor.ts",
-    "frontend/src/hooks/useInternetIdentity.ts",
-    "frontend/src/hooks/useQueries.ts",
-    "frontend/src/index.css",
-    "frontend/src/main.tsx",
-    "frontend/src/pages/LandingPage.tsx",
-    "frontend/tailwind.config.js",
     "project_state.json"
   ]
 }

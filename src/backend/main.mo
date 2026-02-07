@@ -6,6 +6,8 @@ import Runtime "mo:core/Runtime";
 import Array "mo:core/Array";
 import Order "mo:core/Order";
 import Text "mo:core/Text";
+import Char "mo:core/Char";
+import Time "mo:core/Time";
 
 actor {
   module Player {
@@ -64,6 +66,21 @@ actor {
     turns : [TurnResult];
   };
 
+  module GameView {
+    public func fromGame(game : Game) : GameView {
+      {
+        id = game.id;
+        playerIds = game.playerIds;
+        currentPlayer = game.currentPlayer;
+        remainingScores = game.remainingScores;
+        totalScores = game.totalScores;
+        isOver = game.isOver;
+        throws = game.throws.toArray();
+        turns = game.turns.toArray();
+      };
+    };
+  };
+
   let gameIdCounter = Map.empty<Id, Id>();
   let playerIdCounter = Map.empty<Id, Id>();
   let players = Map.empty<Id, Player>();
@@ -75,6 +92,7 @@ actor {
     old + 1;
   };
 
+  // Game Logic Functions
   public shared ({ caller }) func createPlayer(name : Text) : async Player {
     let id = generateId(playerIdCounter);
     let player = {
@@ -98,20 +116,7 @@ actor {
       turns = List.empty<TurnResult>();
     };
     games.add(id, game);
-    gameToView(game);
-  };
-
-  func gameToView(game : Game) : GameView {
-    {
-      id = game.id;
-      playerIds = game.playerIds;
-      currentPlayer = game.currentPlayer;
-      remainingScores = game.remainingScores;
-      totalScores = game.totalScores;
-      isOver = game.isOver;
-      throws = game.throws.toArray();
-      turns = game.turns.toArray();
-    };
+    mergeGameWithThrowsAndTurns(game);
   };
 
   public shared ({ caller }) func recordThrow(gameId : Id, value : Nat, multiplier : Nat) : async ThrowResult {
@@ -140,16 +145,12 @@ actor {
     if (throws.size() != 3) {
       Runtime.trap("A turn must have 3 throws");
     };
-    let turnResult : TurnResult = {
-      throws;
-    };
-
+    let turnResult = { throws };
     let game = switch (games.get(gameId)) {
       case (null) { Runtime.trap("Game does not exist") };
       case (?game) { game };
     };
     game.turns.add(turnResult);
-
     turnResult;
   };
 
@@ -170,9 +171,63 @@ actor {
     players.values().toArray().sort();
   };
 
+  func mergeGameWithThrowsAndTurns(game : Game) : GameView {
+    {
+      id = game.id;
+      playerIds = game.playerIds;
+      currentPlayer = game.currentPlayer;
+      remainingScores = game.remainingScores;
+      totalScores = game.totalScores;
+      isOver = game.isOver;
+      throws = game.throws.toArray();
+      turns = game.turns.toArray();
+    };
+  };
+
   public query ({ caller }) func getAllGames() : async [GameView] {
     games.values().toArray().map(
-      func(game) { gameToView(game) }
+      func(game) { mergeGameWithThrowsAndTurns(game) }
     );
+  };
+
+  // HTTP Routing patterns
+  type Route =
+    { #health } or { #authGoogleStart } or { #authGoogleCallback } or { #other };
+
+  func routePath(path : Text) : Route {
+    switch (path) {
+      case ("/health") { #health };
+      case ("/auth/google/start") { #authGoogleStart };
+      case ("/auth/google/callback") { #authGoogleCallback };
+      case (_) { #other };
+    };
+  };
+
+  // Returns string up to first '?' (used for HTTP endpoint path matching)
+  func pathOfUrl(url : Text) : Text {
+    let questionMarkIndex = url.toArray().findIndex(func(c) { c == '?' });
+    switch (questionMarkIndex) {
+      case (null) { url };
+      case (?index) {
+        let chars = url.toArray();
+        var path = "";
+        var i = 0;
+        while (i < index) {
+          path #= chars[i].toText();
+          i += 1;
+        };
+        path;
+      };
+    };
+  };
+
+  // Stand-in type and function for HTTP (No actual HTTP calls supported in Motoko)
+  type NSURL = {
+    status_code : Nat;
+    headers : [Text];
+    body : Text;
+  };
+  func standInHTTPCall(url : NSURL) : NSURL {
+    url;
   };
 };

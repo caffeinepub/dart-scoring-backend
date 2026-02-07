@@ -1,10 +1,15 @@
 {
   "schemaVersion": "1.0.0",
-  "projectStateVersion": 3,
+  "projectStateVersion": 5,
   "summary": "Backend service for dart scoring.",
-  "architectural_notes": [],
-  "known_issues": [],
-  "isFixRequest": false,
+  "architectural_notes": [
+    "Motoko canister should implement http_request query handler with method+path routing; return JSON for specific endpoints and HTML landing page for all other paths.",
+    "Add CORS headers to JSON responses and support OPTIONS for any path by returning 204 with CORS headers."
+  ],
+  "known_issues": [
+    "/auth/google/start currently returns HTML landing page instead of JSON due to missing/incorrect HTTP routing in Motoko canister."
+  ],
+  "isFixRequest": true,
   "existing_features": [
     {
       "id": "feature-create-a-minimal-frontend-shell-with-a-coherent-visual-theme-colors-typography-spacing-and-component-styling-applied-consistently-across-the-app-without-adding-additional-product-features-beyond-a-basic-landing-scaffold",
@@ -51,6 +56,52 @@
       "summary": "Add backend-side validation, error handling, and deterministic IDs for stable operation (no traps on invalid input).",
       "reqIds": [
         "REQ-4"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-6",
+      "summary": "Fix Motoko canister HTTP routing: handle req.method+req.url, add JSON endpoints (/health, /auth/google/start, /auth/google/callback), CORS headers, and OPTIONS preflight (204) while keeping HTML landing page fallback.",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-7",
+      "summary": "Implement or fix the canister HTTP request handler (`http_request` as a `query`) in `backend/main.mo` so it routes based on `req.method` and the URL path parsed from `req.url` (ignore any query string).",
+      "reqIds": [
+        "REQ-6"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-8",
+      "summary": "Add HTTP routing for the following endpoints in the Motoko HTTP handler:\n- `GET /health` returns `200` JSON body `{\"ok\": true}`\n- `GET /auth/google/start` returns `200` JSON body `{\"ok\": true, \"message\": \"google start reached\"}`\n- `GET /auth/google/callback` returns `200` JSON body `{\"ok\": true, \"message\": \"google callback reached\"}`",
+      "reqIds": [
+        "REQ-7"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-9",
+      "summary": "For all other HTTP paths (non-matching routes), continue returning the existing HTML landing page response (status 200, `Content-Type: text/html`).",
+      "reqIds": [
+        "REQ-8"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-10",
+      "summary": "Add CORS headers to all JSON responses returned by the Motoko HTTP handler:\n- `Access-Control-Allow-Origin: *`\n- `Access-Control-Allow-Methods: GET,POST,PUT,OPTIONS`\n- `Access-Control-Allow-Headers: Content-Type, Authorization, X-ADMIN-TOKEN`",
+      "reqIds": [
+        "REQ-9"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-11",
+      "summary": "Handle `OPTIONS` requests for any path in the Motoko HTTP handler by returning status `204` with the specified CORS headers and an empty body.",
+      "reqIds": [
+        "REQ-10"
       ],
       "status": "pending"
     }

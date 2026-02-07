@@ -1,110 +1,102 @@
 {
   "kind": "build_request",
-  "title": "Dart Scoring Backend Service (API + Data Model)",
+  "title": "Fix Motoko canister HTTP routing by method+path (JSON endpoints + CORS + OPTIONS) with HTML fallback",
   "priority": "normal",
   "requirements": [
     {
-      "id": "REQ-1",
-      "text": "Implement a Motoko backend canister that persists dart scoring data models and exposes a Candid API to manage games, players, and scoring events.",
+      "id": "REQ-6",
+      "text": "Implement or fix the canister HTTP request handler (`http_request` as a `query`) in `backend/main.mo` so it routes based on `req.method` and the URL path parsed from `req.url` (ignore any query string).",
       "target": "backend",
       "source": {
         "messageIds": [
-          "msg-2"
+          "msg-6"
         ],
         "quotes": [
-          "Dart Scoring Backend"
+          "Zaimplementuj (lub popraw) funkcję HTTP request handler (http_request / query),\nktóra czyta:\n- req.method\n- req.url (ścieżka)"
         ]
       },
       "acceptanceCriteria": [
-        "Backend compiles as a single-actor Motoko canister (all logic in backend/main.mo).",
-        "Define Candid types for at least: Player, Game, GameRules, Throw, Turn, Leg (or Round), and GameStatus.",
-        "All stored data survives canister upgrades using stable variables (no external DB)."
+        "`backend/main.mo` exports a `public query func http_request(req : HttpRequest) : async HttpResponse` compatible with the IC HTTP interface.",
+        "The handler uses both `req.method` and the path component of `req.url` for routing (e.g., `/auth/google/start` routes even if `?x=y` is present)."
       ]
     },
     {
-      "id": "REQ-2",
-      "text": "Provide API methods to create and query games and players, including the ability to start a new game with rules and retrieve game state by id.",
+      "id": "REQ-7",
+      "text": "Add HTTP routing for the following endpoints in the Motoko HTTP handler:\n- `GET /health` returns `200` JSON body `{\"ok\": true}`\n- `GET /auth/google/start` returns `200` JSON body `{\"ok\": true, \"message\": \"google start reached\"}`\n- `GET /auth/google/callback` returns `200` JSON body `{\"ok\": true, \"message\": \"google callback reached\"}`",
       "target": "backend",
       "source": {
         "messageIds": [
-          "msg-2"
+          "msg-6"
         ],
         "quotes": [
-          "Dart Scoring Backend"
+          "Dodaj routing:\n- GET /health -> zwróć JSON 200: {\"ok\": true}\n- GET /auth/google/start -> zwróć JSON 200: {\"ok\": true, \"message\": \"google start reached\"}\n- GET /auth/google/callback -> zwróć JSON 200: {\"ok\": true, \"message\": \"google callback reached\"}"
         ]
       },
       "acceptanceCriteria": [
-        "Expose an update method to create a new game (e.g., createGame) that returns a unique GameId.",
-        "Expose query methods to list games and fetch a game by id (e.g., listGames, getGame).",
-        "Game creation supports configuring rules (at minimum: starting score (e.g., 301/501), double-out on/off, max darts per turn)."
+        "Requesting `GET /health` returns HTTP 200 with `Content-Type: application/json` and body exactly representing the specified JSON.",
+        "Requesting `GET /auth/google/start` returns HTTP 200 with `Content-Type: application/json` and the specified JSON payload.",
+        "Requesting `GET /auth/google/callback` returns HTTP 200 with `Content-Type: application/json` and the specified JSON payload.",
+        "Visiting `https://dart-scoring-backend-vab.caffeine.xyz/auth/google/start` shows JSON (not the HTML landing page)."
       ]
     },
     {
-      "id": "REQ-3",
-      "text": "Implement dart scoring logic and an API to record throws/turns and compute scores according to standard rules, including bust handling and optional double-out finishing.",
+      "id": "REQ-8",
+      "text": "For all other HTTP paths (non-matching routes), continue returning the existing HTML landing page response (status 200, `Content-Type: text/html`).",
       "target": "backend",
       "source": {
         "messageIds": [
-          "msg-2"
+          "msg-6"
         ],
         "quotes": [
-          "Dart Scoring Backend"
+          "Dla wszystkich innych ścieżek możesz dalej zwracać HTML landing page."
         ]
       },
       "acceptanceCriteria": [
-        "Expose an update method to record a scoring event for a player in a specific game (e.g., recordTurn or recordThrows) with validation of segment (1–20, bull) and multiplier (single/double/triple where applicable).",
-        "Score computation updates the player’s remaining score correctly; when a bust occurs, the player’s score reverts for that turn and the turn is marked as bust.",
-        "If double-out is enabled, a leg/game can only be won when the finishing dart is a double (including double bull as applicable).",
-        "Expose a query method to retrieve the current scoreboard for a game (players, remaining scores, legs/sets if modeled, whose turn)."
+        "Any `GET` request to an unknown path (e.g., `/`, `/unknown`) returns HTML landing page content (not JSON).",
+        "The new JSON routes do not regress the HTML fallback for other paths."
       ]
     },
     {
-      "id": "REQ-4",
-      "text": "Add backend-side validation, error handling, and deterministic IDs for stable operation (no traps on invalid input).",
+      "id": "REQ-9",
+      "text": "Add CORS headers to all JSON responses returned by the Motoko HTTP handler:\n- `Access-Control-Allow-Origin: *`\n- `Access-Control-Allow-Methods: GET,POST,PUT,OPTIONS`\n- `Access-Control-Allow-Headers: Content-Type, Authorization, X-ADMIN-TOKEN`",
       "target": "backend",
       "source": {
         "messageIds": [
-          "msg-2"
+          "msg-6"
         ],
         "quotes": [
-          "Dart Scoring Backend"
+          "Dodaj CORS do odpowiedzi JSON:\nAccess-Control-Allow-Origin: *\nAccess-Control-Allow-Methods: GET,POST,PUT,OPTIONS\nAccess-Control-Allow-Headers: Content-Type, Authorization, X-ADMIN-TOKEN"
         ]
       },
       "acceptanceCriteria": [
-        "All update/query methods return Result-style variants (ok/err) for invalid ids, invalid throws, or illegal state transitions (e.g., recording throws after game is finished).",
-        "IDs for games/players are unique and deterministic within the canister (e.g., incrementing counters stored stably).",
-        "Provide basic authorization expectations: if no auth is implemented, document and enforce that any caller can create and update games (no hidden assumptions)."
+        "Each JSON endpoint response includes all three specified CORS headers with exactly the specified values."
       ]
     },
     {
-      "id": "REQ-5",
-      "text": "Create a minimal frontend shell with a coherent visual theme (colors, typography, spacing, and component styling) applied consistently across the app, without adding additional product features beyond a basic landing scaffold.",
-      "target": "frontend",
+      "id": "REQ-10",
+      "text": "Handle `OPTIONS` requests for any path in the Motoko HTTP handler by returning status `204` with the specified CORS headers and an empty body.",
+      "target": "backend",
       "source": {
         "messageIds": [
-          "msg-2"
+          "msg-6"
         ],
         "quotes": [
-          "Dart Scoring Backend"
+          "Obsłuż OPTIONS dla dowolnej ścieżki: zwróć 204 + nagłówki CORS."
         ]
       },
       "acceptanceCriteria": [
-        "Frontend renders a simple landing page describing the dart scoring backend and how to use it (English text).",
-        "Use a distinct, non-blue/purple visual theme consistently (e.g., pub chalkboard / dartboard-inspired palette with high-contrast typography).",
-        "No edits are made to files under frontend/src/components/ui or other immutable paths; compose existing components instead."
+        "Any `OPTIONS` request (e.g., `OPTIONS /health`, `OPTIONS /anything`) returns HTTP 204 with an empty body.",
+        "The `OPTIONS` response includes `Access-Control-Allow-Origin`, `Access-Control-Allow-Methods`, and `Access-Control-Allow-Headers` with the exact specified values."
       ]
     }
   ],
   "constraints": [
-    "Use English for any user-facing text.",
-    "Backend must remain a single Motoko actor with all logic in backend/main.mo.",
-    "Do not modify files under frontend immutable paths (compose instead).",
-    "No external databases or third-party backend services."
+    "Backend must remain a single Motoko actor in `backend/main.mo` (no additional backend services).",
+    "Only create `backend/migration.mo` if a state migration is required; this change should not require any stable-state migration."
   ],
   "nonGoals": [
-    "Building a full dart scoring UI/UX (match setup screens, live scoreboard UI, animations).",
-    "Real-time multiplayer synchronization (no WebSockets/push).",
-    "Third-party authentication providers (only Internet Identity is allowed, but not required unless requested)."
+    "Implementing real Google OAuth flow (tokens, redirects, exchanging codes) beyond returning the requested JSON test payloads.",
+    "Adding new frontend routes or changing the React landing page UI."
   ],
   "imageRequirements": {
     "required": [],
