@@ -1,0 +1,48 @@
+{
+  "kind": "implementation_plan",
+  "version": "1.0",
+  "title": "Dart Scoring Backend – Minimal Themed Frontend Landing",
+  "requirements": [
+    {
+      "id": "REQ-5",
+      "summary": "Add a minimal, consistently themed frontend landing page that describes the dart scoring backend and basic usage (no extra product features).",
+      "acceptanceCriteria": [
+        "Frontend renders a simple landing page describing the dart scoring backend and how to use it (English text).",
+        "Use a distinct, non-blue/purple visual theme consistently (e.g., pub chalkboard / dartboard-inspired palette with high-contrast typography).",
+        "No edits are made to files under frontend/src/components/ui or other immutable paths; compose existing components instead."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/App.tsx",
+          "operation": "create",
+          "description": "Create the app shell that renders a single landing scaffold (no extra routes/features). Compose shadcn-ui components (e.g., Card/Separator/Button if available) for consistent structure and styling; do not modify any files under frontend/src/components/ui. Verify the component's usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/pages/LandingPage.tsx",
+          "operation": "create",
+          "description": "Implement the landing page content in English: brief description of the Motoko canister backend, a short list of core capabilities (games, players, scoring events), and a small 'How to use' section referencing the available backend interface methods at a conceptual level (e.g., createPlayer, createGame, recordTurn, getGameState) without building interactive scoring UI. Use shadcn-ui components for layout/typography where helpful; do not modify immutable UI component files. Verify the component's usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/main.tsx",
+          "operation": "modify",
+          "description": "Ensure the React app reliably mounts the new App component and that the minimal landing is rendered as the default view (keep existing providers like QueryClientProvider and InternetIdentityProvider intact; do not add new product features)."
+        },
+        {
+          "path": "frontend/src/index.css",
+          "operation": "create",
+          "description": "Add global theme tokens and base styles to achieve a distinct non-blue/purple theme (chalkboard/dartboard-inspired): set CSS variables consumed by Tailwind/shadcn (background/foreground/primary/accent/etc.), establish high-contrast typography, and consistent spacing defaults. Keep styles generic and app-wide (no feature UI)."
+        },
+        {
+          "path": "frontend/tailwind.config.js",
+          "operation": "modify",
+          "description": "Adjust theme configuration only as needed to support the landing’s cohesive visual system (e.g., ensure typography/containers work well with the chalkboard-like palette). Keep changes minimal and consistent with the existing CSS-variable color strategy used by shadcn/ui."
+        },
+        {
+          "path": "frontend/src/config.ts",
+          "operation": "modify",
+          "description": "Implement/repair the frontend configuration loader used by existing infrastructure (e.g., the InternetIdentity hook’s config import) so the app builds and runs reliably, without adding new product features beyond the landing scaffold."
+        }
+      ]
+    }
+  ]
+}

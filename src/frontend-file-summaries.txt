@@ -1,0 +1,8 @@
+{
+  "frontend/src/config.ts": "Configuration loader that fetches canister ID from env.json and creates backend actor instances with optional authentication.",
+  "frontend/src/hooks/useQueries.ts": "React Query hooks for fetching players and games, plus mutations for creating players and games with automatic cache invalidation.",
+  "frontend/src/App.tsx": "Root application component that renders the LandingPage.",
+  "frontend/src/pages/LandingPage.tsx": "Complete landing page showcasing the dart scoring backend with hero section, features grid, API documentation, usage guide, technical details, and footer.",
+  "frontend/src/index.css": "Global styles with dartboard-inspired OKLCH color palette (forest green, cream, red accents) for both light and dark modes.",
+  "frontend/tailwind.config.js": "Tailwind configuration with custom font families and extended theme tokens matching the dartboard aesthetic."
+}

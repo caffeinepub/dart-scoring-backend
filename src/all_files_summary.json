@@ -1,0 +1,16 @@
+{
+  "backend/main.mo": "Implements a dart scoring backend with player and game creation, turn and throw recording, and game state retrieval using in‑memory maps.",
+  "feature_evidence.json": "Defines metadata linking frontend files to a feature report for a themed minimal frontend shell.",
+  "frontend-file-summaries.txt": "Lists short descriptions of key frontend files for reference or documentation.",
+  "frontend/index.css": "Defines Tailwind base layers and a CSS variable theme for light and dark modes.",
+  "frontend/index.html": "Basic HTML entry point mounting the React app and loading main.tsx.",
+  "frontend/src/App.tsx": "Root React component that renders the LandingPage.",
+  "frontend/src/hooks/useActor.ts": "Hook that creates and manages the authenticated or anonymous backend actor and refreshes queries on identity changes.",
+  "frontend/src/hooks/useInternetIdentity.ts": "Provides React context and logic for Internet Identity authentication, persistence, and login state.",
+  "frontend/src/hooks/useQueries.ts": "React Query hooks for fetching and mutating players and games via the backend actor.",
+  "frontend/src/index.css": "Tailwind theme file using a dartboard‑inspired OKLCH palette for light and dark modes.",
+  "frontend/src/main.tsx": "Application entry that mounts React, sets up React Query, Internet Identity, and global styles.",
+  "frontend/src/pages/LandingPage.tsx": "React landing page showing hero text, feature cards, and a header linking to GitHub with styled UI components.",
+  "frontend/tailwind.config.js": "TailwindCSS configuration defining theme colors, typography, container settings, animations, and plugin usage.",
+  "project_state.json": "Tracks project metadata, implemented features, and pending backend feature requests for the dart scoring system."
+}
