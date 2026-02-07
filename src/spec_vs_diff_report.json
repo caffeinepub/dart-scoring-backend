@@ -1,60 +1,52 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-07T23:10:27.164Z",
-  "summary": "The diff does not show any implementation of the requested Motoko canister HTTP routing changes (method+path routing, JSON endpoints, CORS headers, or OPTIONS handling). It mainly shows unrelated backend game logic content and an update to project_state.json.",
+  "generatedAt": "2026-02-07T23:18:11.480Z",
+  "summary": "The diff does not show any implementation of the required `http_request` HTTP interface or routing/CORS behavior in `backend/main.mo` (the visible portion contains only game/player logic). Additionally, `project_state.json` was modified even though the BuildRequest did not request project state metadata changes.",
   "missing_requirements": [
     {
-      "id": "REQ-6",
-      "requirement": "Implement or fix `public query func http_request(req : HttpRequest) : async HttpResponse` in `backend/main.mo` to route using both `req.method` and the path component of `req.url` (ignoring query string).",
-      "reason": "The provided truncated `backend/main.mo` content does not include any `http_request` function or URL parsing/routing logic based on method+path.",
+      "id": "REQ-11",
+      "requirement": "Add `public query func http_request(req : HttpRequest) : async HttpResponse` in `backend/main.mo` and route based on `req.method` and URL path parsed from `req.url` (ignoring query string).",
+      "reason": "No evidence in the provided/truncated `backend/main.mo` diff that `http_request` exists or that URL path parsing/routing was added.",
       "evidence": [
-        "backend/main.mo (truncated)"
+        "backend/main.mo (truncated; no http_request shown)"
       ]
     },
     {
-      "id": "REQ-7",
-      "requirement": "Add GET routes `/health`, `/auth/google/start`, and `/auth/google/callback` returning the specified JSON bodies with `Content-Type: application/json`.",
-      "reason": "No HTTP handler or routing table/switch is shown, and none of the specified paths or JSON payloads appear in the diff snippet.",
+      "id": "REQ-12",
+      "requirement": "Implement exact method+path routing: OPTIONS->204 empty; GET /health->200 {\"ok\":true}; GET /auth/google/start->200 {\"ok\":true,\"message\":\"google start reached\"}; GET /auth/google/callback->200 {\"ok\":true,\"message\":\"google callback reached\"}; else 404 {\"error\":\"not_found\"}.",
+      "reason": "No evidence in the provided/truncated `backend/main.mo` diff of these routes, status codes, or exact JSON bodies.",
       "evidence": [
-        "backend/main.mo (truncated)"
+        "backend/main.mo (truncated; no routing/JSON bodies shown)"
       ]
     },
     {
-      "id": "REQ-8",
-      "requirement": "For all other paths, return the existing HTML landing page (status 200, `Content-Type: text/html`).",
-      "reason": "No HTTP handler response logic is present in the shown diff snippet, so the HTML fallback behavior cannot be verified/appears unimplemented in the shown changes.",
+      "id": "REQ-13",
+      "requirement": "Add CORS headers to every `http_request` response (including 204 and 404): Allow-Origin *, Allow-Methods GET,POST,PUT,OPTIONS, Allow-Headers Content-Type, Authorization, X-ADMIN-TOKEN.",
+      "reason": "No evidence in the provided/truncated `backend/main.mo` diff that any HTTP responses (or headers) are being constructed.",
       "evidence": [
-        "backend/main.mo (truncated)"
+        "backend/main.mo (truncated; no headers/HttpResponse construction shown)"
       ]
     },
     {
-      "id": "REQ-9",
-      "requirement": "Add CORS headers to all JSON responses: `Access-Control-Allow-Origin: *`, `Access-Control-Allow-Methods: GET,POST,PUT,OPTIONS`, `Access-Control-Allow-Headers: Content-Type, Authorization, X-ADMIN-TOKEN`.",
-      "reason": "No JSON response construction or header-setting code is visible in the diff snippet.",
+      "id": "REQ-14",
+      "requirement": "Disable/remove HTML landing page fallback from the canister HTTP handler so no path returns HTML; non-matching routes return JSON 404 instead.",
+      "reason": "No evidence in the provided/truncated `backend/main.mo` diff that an existing HTML fallback was removed or that 404 JSON fallback was added.",
       "evidence": [
-        "backend/main.mo (truncated)"
-      ]
-    },
-    {
-      "id": "REQ-10",
-      "requirement": "Handle `OPTIONS` for any path by returning 204 with the specified CORS headers and an empty body.",
-      "reason": "No `OPTIONS` handling or generic preflight response logic is visible in the diff snippet.",
-      "evidence": [
-        "backend/main.mo (truncated)"
+        "backend/main.mo (truncated; no HTML handler/fallback changes shown)"
       ]
     }
   ],
   "hallucinated_features": [
     {
-      "description": "Updated `project_state.json` to add/modify \"new_feature_requests\" entries (AR-1..AR-11) describing various features, including the requested HTTP routing tasks.",
-      "reason": "The BuildRequest only asks for backend HTTP handler changes in `backend/main.mo` (and explicitly notes no migration should be needed). It does not request updating project state metadata.",
+      "description": "Modified `project_state.json` project metadata/new_feature_requests tracking.",
+      "reason": "The BuildRequest only asks for backend HTTP routing changes in `backend/main.mo` and explicitly says frontend paths are not needed; it does not request updating project state metadata.",
       "evidence": [
         "project_state.json (truncated)"
       ]
     }
   ],
-  "confidence": 0.74,
+  "confidence": 0.7,
   "changed_files": [
     "backend/main.mo",
     "project_state.json"

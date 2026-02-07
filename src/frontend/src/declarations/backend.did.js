@@ -31,6 +31,21 @@ export const GameState = IDL.Record({
   'isOver' : IDL.Bool,
   'remainingScores' : IDL.Vec(IDL.Nat),
 });
+export const HttpMethod = IDL.Text;
+export const HttpBody = IDL.Vec(IDL.Nat8);
+export const HttpHeader = IDL.Tuple(IDL.Text, IDL.Text);
+export const HttpRequest = IDL.Record({
+  'url' : IDL.Text,
+  'method' : HttpMethod,
+  'body' : HttpBody,
+  'headers' : IDL.Vec(HttpHeader),
+});
+export const HttpStatusCode = IDL.Nat16;
+export const HttpResponse = IDL.Record({
+  'body' : HttpBody,
+  'headers' : IDL.Vec(HttpHeader),
+  'status_code' : HttpStatusCode,
+});
 
 export const idlService = IDL.Service({
   'createGame' : IDL.Func([IDL.Vec(Id)], [GameView], []),
@@ -38,6 +53,7 @@ export const idlService = IDL.Service({
   'getAllGames' : IDL.Func([], [IDL.Vec(GameView)], ['query']),
   'getAllPlayers' : IDL.Func([], [IDL.Vec(Player)], ['query']),
   'getGameState' : IDL.Func([Id], [GameState], ['query']),
+  'http_request' : IDL.Func([HttpRequest], [HttpResponse], ['query']),
   'recordThrow' : IDL.Func([Id, IDL.Nat, IDL.Nat], [ThrowResult], []),
   'recordTurn' : IDL.Func([Id, IDL.Vec(ThrowResult)], [TurnResult], []),
 });
@@ -65,6 +81,21 @@ export const idlFactory = ({ IDL }) => {
     'isOver' : IDL.Bool,
     'remainingScores' : IDL.Vec(IDL.Nat),
   });
+  const HttpMethod = IDL.Text;
+  const HttpBody = IDL.Vec(IDL.Nat8);
+  const HttpHeader = IDL.Tuple(IDL.Text, IDL.Text);
+  const HttpRequest = IDL.Record({
+    'url' : IDL.Text,
+    'method' : HttpMethod,
+    'body' : HttpBody,
+    'headers' : IDL.Vec(HttpHeader),
+  });
+  const HttpStatusCode = IDL.Nat16;
+  const HttpResponse = IDL.Record({
+    'body' : HttpBody,
+    'headers' : IDL.Vec(HttpHeader),
+    'status_code' : HttpStatusCode,
+  });
   
   return IDL.Service({
     'createGame' : IDL.Func([IDL.Vec(Id)], [GameView], []),
@@ -72,6 +103,7 @@ export const idlFactory = ({ IDL }) => {
     'getAllGames' : IDL.Func([], [IDL.Vec(GameView)], ['query']),
     'getAllPlayers' : IDL.Func([], [IDL.Vec(Player)], ['query']),
     'getGameState' : IDL.Func([Id], [GameState], ['query']),
+    'http_request' : IDL.Func([HttpRequest], [HttpResponse], ['query']),
     'recordThrow' : IDL.Func([Id, IDL.Nat, IDL.Nat], [ThrowResult], []),
     'recordTurn' : IDL.Func([Id, IDL.Vec(ThrowResult)], [TurnResult], []),
   });

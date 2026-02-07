@@ -1,13 +1,14 @@
 {
   "schemaVersion": "1.0.0",
-  "projectStateVersion": 5,
+  "projectStateVersion": 7,
   "summary": "Backend service for dart scoring.",
   "architectural_notes": [
-    "Motoko canister should implement http_request query handler with method+path routing; return JSON for specific endpoints and HTML landing page for all other paths.",
-    "Add CORS headers to JSON responses and support OPTIONS for any path by returning 204 with CORS headers."
+    "Add CORS headers to JSON responses and support OPTIONS for any path by returning 204 with CORS headers.",
+    "Temporarily disable/avoid serving the HTML landing page from the Motoko http_request handler; unmatched routes should return JSON 404 {\"error\":\"not_found\"} (still include CORS headers).",
+    "CORS headers must be included on every HTTP response from the Motoko http_request handler (JSON responses and OPTIONS 204)."
   ],
   "known_issues": [
-    "/auth/google/start currently returns HTML landing page instead of JSON due to missing/incorrect HTTP routing in Motoko canister."
+    "Backend currently returns the HTML landing page for every path; HTTP routing is not active. Must return JSON for /health and /auth/google/* and not serve HTML."
   ],
   "isFixRequest": true,
   "existing_features": [
@@ -82,14 +83,6 @@
       "status": "pending"
     },
     {
-      "id": "AR-9",
-      "summary": "For all other HTTP paths (non-matching routes), continue returning the existing HTML landing page response (status 200, `Content-Type: text/html`).",
-      "reqIds": [
-        "REQ-8"
-      ],
-      "status": "pending"
-    },
-    {
       "id": "AR-10",
       "summary": "Add CORS headers to all JSON responses returned by the Motoko HTTP handler:\n- `Access-Control-Allow-Origin: *`\n- `Access-Control-Allow-Methods: GET,POST,PUT,OPTIONS`\n- `Access-Control-Allow-Headers: Content-Type, Authorization, X-ADMIN-TOKEN`",
       "reqIds": [
@@ -102,6 +95,44 @@
       "summary": "Handle `OPTIONS` requests for any path in the Motoko HTTP handler by returning status `204` with the specified CORS headers and an empty body.",
       "reqIds": [
         "REQ-10"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-12",
+      "summary": "Disable HTML landing page fallback in Motoko http_request handler; for non-matching routes return JSON 404 {\"error\":\"not_found\"} with CORS headers on every response (including 204 OPTIONS).",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-13",
+      "summary": "Implement the Internet Computer HTTP interface in `backend/main.mo` by adding a public query function `public query func http_request(req : HttpRequest) : async HttpResponse` that performs routing based on `req.method` and the URL path parsed from `req.url` (ignore any query string).",
+      "reqIds": [
+        "REQ-11"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-14",
+      "summary": "In `http_request`, implement method+path routing exactly as follows: (a) if `req.method == \"OPTIONS\"`, return HTTP 204 with an empty body; (b) if `req.method == \"GET\"` and path is `/health`, return HTTP 200 with JSON body `{\"ok\":true}`; (c) if `GET` and path is `/auth/google/start`, return HTTP 200 with JSON body `{\"ok\":true,\"message\":\"google start reached\"}`; (d) if `GET` and path is `/auth/google/callback`, return HTTP 200 with JSON body `{\"ok\":true,\"message\":\"google callback reached\"}`; (e) otherwise return HTTP 404 with JSON body `{\"error\":\"not_found\"}`.",
+      "reqIds": [
+        "REQ-12"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-15",
+      "summary": "Add the following CORS headers to every `http_request` response (including 204 and 404): `Access-Control-Allow-Origin: *`, `Access-Control-Allow-Methods: GET,POST,PUT,OPTIONS`, `Access-Control-Allow-Headers: Content-Type, Authorization, X-ADMIN-TOKEN`.",
+      "reqIds": [
+        "REQ-13"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-16",
+      "summary": "Disable/remove the HTML landing page response from the canister HTTP handler so that no path returns an HTML page; non-matching routes must return the JSON 404 response instead.",
+      "reqIds": [
+        "REQ-14"
       ],
       "status": "pending"
     }

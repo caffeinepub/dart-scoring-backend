@@ -1,46 +1,39 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-07T23:10:27.166Z",
+  "generatedAt": "2026-02-07T23:18:11.482Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
-    "total": 5,
+    "total": 4,
     "implemented": 0,
     "items": [
       {
-        "id": "REQ-10",
-        "summary": "Handle `OPTIONS` requests for any path in the Motoko HTTP handler by returning status `204` with the specified CORS headers and an empty body.",
+        "id": "REQ-11",
+        "summary": "Implement the Internet Computer HTTP interface in `backend/main.mo` by adding a public query function `public query func http_request(req : HttpRequest) : async HttpResponse` that performs routing based on `req.method` and the URL path parsed from `req.url` (ignore any query string).",
         "status": "unknown",
         "plannedFiles": [],
         "matchedFiles": []
       },
       {
-        "id": "REQ-6",
-        "summary": "Implement or fix the canister HTTP request handler (`http_request` as a `query`) in `backend/main.mo` so it routes based on `req.method` and the URL path parsed from `req.url` (ignore any query string).",
+        "id": "REQ-12",
+        "summary": "In `http_request`, implement method+path routing exactly as follows: (a) if `req.method == \"OPTIONS\"`, return HTTP 204 with an empty body; (b) if `req.method == \"GET\"` and path is `/health`, return HTTP 200 with JSON body `{\"ok\":true}`; (c) if `GET` and path is `/auth/google/start`, return HTTP 200 with JSON body `{\"ok\":true,\"message\":\"google start reached\"}`; (d) if `GET` and path is `/auth/google/callback`, return HTTP 200 with JSON body `{\"ok\":true,\"message\":\"google callback reached\"}`; (e) otherwise return HTTP 404 with JSON body `{\"error\":\"not_found\"}`.",
         "status": "unknown",
         "plannedFiles": [],
         "matchedFiles": []
       },
       {
-        "id": "REQ-7",
-        "summary": "Add HTTP routing for the following endpoints in the Motoko HTTP handler:\n- `GET /health` returns `200` JSON body `{\"ok\": true}`\n- `GET /auth/google/start` returns `200` JSON body `{\"ok\": true, \"message\": \"google start reached\"}`\n- `GET /auth/google/callback` returns `200` JSON body `{\"ok\": true, \"message\": \"google callback reached\"}`",
+        "id": "REQ-13",
+        "summary": "Add the following CORS headers to every `http_request` response (including 204 and 404): `Access-Control-Allow-Origin: *`, `Access-Control-Allow-Methods: GET,POST,PUT,OPTIONS`, `Access-Control-Allow-Headers: Content-Type, Authorization, X-ADMIN-TOKEN`.",
         "status": "unknown",
         "plannedFiles": [],
         "matchedFiles": []
       },
       {
-        "id": "REQ-8",
-        "summary": "For all other HTTP paths (non-matching routes), continue returning the existing HTML landing page response (status 200, `Content-Type: text/html`).",
-        "status": "unknown",
-        "plannedFiles": [],
-        "matchedFiles": []
-      },
-      {
-        "id": "REQ-9",
-        "summary": "Add CORS headers to all JSON responses returned by the Motoko HTTP handler:\n- `Access-Control-Allow-Origin: *`\n- `Access-Control-Allow-Methods: GET,POST,PUT,OPTIONS`\n- `Access-Control-Allow-Headers: Content-Type, Authorization, X-ADMIN-TOKEN`",
+        "id": "REQ-14",
+        "summary": "Disable/remove the HTML landing page response from the canister HTTP handler so that no path returns an HTML page; non-matching routes must return the JSON 404 response instead.",
         "status": "unknown",
         "plannedFiles": [],
         "matchedFiles": []
@@ -50,7 +43,6 @@
   "changedFiles": [
     "backend/main.mo",
     "build-request.json",
-    "build-template/README.md",
     "feature_evidence.json",
     "frontend-implementation-plan.json",
     "frontend/src/backend.d.ts",

@@ -26,6 +26,21 @@ export interface GameView {
   'remainingScores' : Array<bigint>,
   'throws' : Array<ThrowResult>,
 }
+export type HttpBody = Uint8Array;
+export type HttpHeader = [string, string];
+export type HttpMethod = string;
+export interface HttpRequest {
+  'url' : string,
+  'method' : HttpMethod,
+  'body' : HttpBody,
+  'headers' : Array<HttpHeader>,
+}
+export interface HttpResponse {
+  'body' : HttpBody,
+  'headers' : Array<HttpHeader>,
+  'status_code' : HttpStatusCode,
+}
+export type HttpStatusCode = number;
 export type Id = bigint;
 export interface Player { 'id' : Id, 'name' : string }
 export interface ThrowResult { 'multiplier' : bigint, 'score' : bigint }
@@ -36,6 +51,7 @@ export interface _SERVICE {
   'getAllGames' : ActorMethod<[], Array<GameView>>,
   'getAllPlayers' : ActorMethod<[], Array<Player>>,
   'getGameState' : ActorMethod<[Id], GameState>,
+  'http_request' : ActorMethod<[HttpRequest], HttpResponse>,
   'recordThrow' : ActorMethod<[Id, bigint, bigint], ThrowResult>,
   'recordTurn' : ActorMethod<[Id, Array<ThrowResult>], TurnResult>,
 }

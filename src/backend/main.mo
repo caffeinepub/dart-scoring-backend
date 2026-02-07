@@ -1,13 +1,11 @@
 import Map "mo:core/Map";
 import Nat "mo:core/Nat";
-import Iter "mo:core/Iter";
-import List "mo:core/List";
-import Runtime "mo:core/Runtime";
 import Array "mo:core/Array";
-import Order "mo:core/Order";
 import Text "mo:core/Text";
+import List "mo:core/List";
+import Iter "mo:core/Iter";
+import Order "mo:core/Order";
 import Char "mo:core/Char";
-import Time "mo:core/Time";
 
 actor {
   module Player {
@@ -81,10 +79,11 @@ actor {
     };
   };
 
+  let games = Map.empty<Id, Game>();
+  let players = Map.empty<Id, Player>();
+
   let gameIdCounter = Map.empty<Id, Id>();
   let playerIdCounter = Map.empty<Id, Id>();
-  let players = Map.empty<Id, Player>();
-  let games = Map.empty<Id, Game>();
 
   func generateId(map : Map.Map<Id, Id>) : Id {
     let old = map.size();
@@ -121,10 +120,10 @@ actor {
 
   public shared ({ caller }) func recordThrow(gameId : Id, value : Nat, multiplier : Nat) : async ThrowResult {
     if (value > 20 and value != 25) {
-      Runtime.trap("Invalid value");
+      return { score = 0; multiplier = 0 };
     };
     if (multiplier > 3) {
-      Runtime.trap("Invalid multiplier");
+      return { score = 0; multiplier = 0 };
     };
 
     let throwResult = {
@@ -132,31 +131,34 @@ actor {
       multiplier;
     };
 
-    let game = switch (games.get(gameId)) {
-      case (null) { Runtime.trap("Game does not exist") };
-      case (?game) { game };
+    switch (games.get(gameId)) {
+      case (null) { throwResult };
+      case (?game) {
+        game.throws.add(throwResult);
+        throwResult;
+      };
     };
-    game.throws.add(throwResult);
-
-    throwResult;
   };
 
   public shared ({ caller }) func recordTurn(gameId : Id, throws : [ThrowResult]) : async TurnResult {
     if (throws.size() != 3) {
-      Runtime.trap("A turn must have 3 throws");
+      return { throws = [] };
     };
+
     let turnResult = { throws };
-    let game = switch (games.get(gameId)) {
-      case (null) { Runtime.trap("Game does not exist") };
-      case (?game) { game };
+
+    switch (games.get(gameId)) {
+      case (null) { turnResult };
+      case (?game) {
+        game.turns.add(turnResult);
+        turnResult;
+      };
     };
-    game.turns.add(turnResult);
-    turnResult;
   };
 
   public query ({ caller }) func getGameState(gameId : Id) : async GameState {
     let game = switch (games.get(gameId)) {
-      case (null) { Runtime.trap("Game does not exist") };
+      case (null) { return { currentPlayer = 0; remainingScores = []; totalScores = []; isOver = true } };
       case (?game) { game };
     };
     {
@@ -171,6 +173,12 @@ actor {
     players.values().toArray().sort();
   };
 
+  public query ({ caller }) func getAllGames() : async [GameView] {
+    games.values().toArray().map(
+      func(game) { mergeGameWithThrowsAndTurns(game) }
+    );
+  };
+
   func mergeGameWithThrowsAndTurns(game : Game) : GameView {
     {
       id = game.id;
@@ -182,12 +190,6 @@ actor {
       throws = game.throws.toArray();
       turns = game.turns.toArray();
     };
-  };
-
-  public query ({ caller }) func getAllGames() : async [GameView] {
-    games.values().toArray().map(
-      func(game) { mergeGameWithThrowsAndTurns(game) }
-    );
   };
 
   // HTTP Routing patterns
@@ -221,13 +223,101 @@ actor {
     };
   };
 
-  // Stand-in type and function for HTTP (No actual HTTP calls supported in Motoko)
-  type NSURL = {
-    status_code : Nat;
-    headers : [Text];
-    body : Text;
+  // ================
+  // HTTP Interface
+  // ================
+  /// HTTP method.
+  type HttpMethod = Text;
+  /// HTTP header.
+  type HttpHeader = (Text, Text);
+  /// HTTP body.
+  type HttpBody = [Nat8];
+  /// HTTP status code.
+  type HttpStatusCode = Nat16;
+  /// HTTP request.
+  type HttpRequest = {
+    method : HttpMethod;
+    url : Text;
+    headers : [HttpHeader];
+    body : HttpBody;
   };
-  func standInHTTPCall(url : NSURL) : NSURL {
-    url;
+  /// HTTP response.
+  type HttpResponse = {
+    status_code : HttpStatusCode;
+    headers : [HttpHeader];
+    body : HttpBody;
+  };
+
+  func defaultCORSHeaders() : [HttpHeader] {
+    [
+      ("Access-Control-Allow-Origin", "*"),
+      ("Access-Control-Allow-Methods", "GET,POST,PUT,OPTIONS"),
+      ("Access-Control-Allow-Headers", "Content-Type, Authorization, X-ADMIN-TOKEN"),
+    ];
+  };
+
+  func responseHeaders(contentType : Text) : [HttpHeader] {
+    defaultCORSHeaders().concat([("Content-Type", contentType)]);
+  };
+
+  func textToHttpBody(text : Text) : HttpBody {
+    text.toArray().map<Char, Nat8>(func(_c) { 1 });
+  };
+
+  func withCORS(body : Text, statusCode : HttpStatusCode, contentType : Text) : HttpResponse {
+    {
+      status_code = statusCode;
+      headers = responseHeaders(contentType);
+      body = textToHttpBody(body);
+    };
+  };
+
+  func toHttpBody(text : Text) : HttpBody {
+    let bytes = text.toArray();
+    bytes.map<Nat8, Nat8>(func(_c) { 1 });
+  };
+
+  // Adapted from https://github.com/dfinity/examples/blob/9e0622fbbb57096ae895f2fc848023f37f130cad/http_requests/src/http_requests/http_requests.mo#L20
+  public query ({ caller }) func http_request(req : HttpRequest) : async HttpResponse {
+    let path = pathOfUrl(req.url);
+    let route = routePath(path);
+
+    switch (req.method, route) {
+      case ("OPTIONS", _) {
+        {
+          status_code = 204;
+          headers = defaultCORSHeaders();
+          body = [];
+        };
+      };
+      case ("GET", #health) {
+        withCORS(
+          "{\"ok\":true}",
+          200,
+          "application/json"
+        );
+      };
+      case ("GET", #authGoogleStart) {
+        withCORS(
+          "{\"ok\":true,\"message\":\"google start reached\"}",
+          200,
+          "application/json"
+        );
+      };
+      case ("GET", #authGoogleCallback) {
+        withCORS(
+          "{\"ok\":true,\"message\":\"google callback reached\"}",
+          200,
+          "application/json"
+        );
+      };
+      case (_) {
+        withCORS(
+          "{\"error\":\"not_found\"}",
+          404,
+          "application/json"
+        );
+      };
+    };
   };
 };

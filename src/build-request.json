@@ -1,115 +1,94 @@
 {
   "kind": "build_request",
-  "title": "Fix Motoko canister HTTP routing by method+path (JSON endpoints + CORS + OPTIONS) with HTML fallback",
-  "priority": "normal",
+  "title": "Fix Motoko canister HTTP routing to return JSON endpoints with CORS (disable HTML fallback)",
+  "priority": "high",
   "requirements": [
     {
-      "id": "REQ-6",
-      "text": "Implement or fix the canister HTTP request handler (`http_request` as a `query`) in `backend/main.mo` so it routes based on `req.method` and the URL path parsed from `req.url` (ignore any query string).",
+      "id": "REQ-11",
+      "text": "Implement the Internet Computer HTTP interface in `backend/main.mo` by adding a public query function `public query func http_request(req : HttpRequest) : async HttpResponse` that performs routing based on `req.method` and the URL path parsed from `req.url` (ignore any query string).",
       "target": "backend",
       "source": {
         "messageIds": [
-          "msg-6"
+          "msg-5"
         ],
         "quotes": [
-          "Zaimplementuj (lub popraw) funkcję HTTP request handler (http_request / query),\nktóra czyta:\n- req.method\n- req.url (ścieżka)"
+          "1) W głównym actorze (np. main.mo) dodaj publiczną funkcję query:\n   public query func http_request(req : HttpRequest) : async HttpResponse",
+          "2) W tej funkcji zrób routing po ścieżce URL (ignoruj query string)"
         ]
       },
       "acceptanceCriteria": [
-        "`backend/main.mo` exports a `public query func http_request(req : HttpRequest) : async HttpResponse` compatible with the IC HTTP interface.",
-        "The handler uses both `req.method` and the path component of `req.url` for routing (e.g., `/auth/google/start` routes even if `?x=y` is present)."
+        "`backend/main.mo` exports `http_request` as a `public query` method with the signature `http_request(req : HttpRequest) : async HttpResponse`.",
+        "Routing uses only the URL path (anything after `?` in `req.url` is ignored for route matching)."
       ]
     },
     {
-      "id": "REQ-7",
-      "text": "Add HTTP routing for the following endpoints in the Motoko HTTP handler:\n- `GET /health` returns `200` JSON body `{\"ok\": true}`\n- `GET /auth/google/start` returns `200` JSON body `{\"ok\": true, \"message\": \"google start reached\"}`\n- `GET /auth/google/callback` returns `200` JSON body `{\"ok\": true, \"message\": \"google callback reached\"}`",
+      "id": "REQ-12",
+      "text": "In `http_request`, implement method+path routing exactly as follows: (a) if `req.method == \"OPTIONS\"`, return HTTP 204 with an empty body; (b) if `req.method == \"GET\"` and path is `/health`, return HTTP 200 with JSON body `{\"ok\":true}`; (c) if `GET` and path is `/auth/google/start`, return HTTP 200 with JSON body `{\"ok\":true,\"message\":\"google start reached\"}`; (d) if `GET` and path is `/auth/google/callback`, return HTTP 200 with JSON body `{\"ok\":true,\"message\":\"google callback reached\"}`; (e) otherwise return HTTP 404 with JSON body `{\"error\":\"not_found\"}`.",
       "target": "backend",
       "source": {
         "messageIds": [
-          "msg-6"
+          "msg-5"
         ],
         "quotes": [
-          "Dodaj routing:\n- GET /health -> zwróć JSON 200: {\"ok\": true}\n- GET /auth/google/start -> zwróć JSON 200: {\"ok\": true, \"message\": \"google start reached\"}\n- GET /auth/google/callback -> zwróć JSON 200: {\"ok\": true, \"message\": \"google callback reached\"}"
+          "- jeśli req.method == \"OPTIONS\" -> zwróć 204 + CORS\n   - jeśli GET i path == \"/health\" -> JSON 200 {\"ok\":true}\n   - jeśli GET i path == \"/auth/google/start\" -> JSON 200 {\"ok\":true,\"message\":\"google start reached\"}\n   - jeśli GET i path == \"/auth/google/callback\" -> JSON 200 {\"ok\":true,\"message\":\"google callback reached\"}\n   - dla reszty -> JSON 404 {\"error\":\"not_found\"}"
         ]
       },
       "acceptanceCriteria": [
-        "Requesting `GET /health` returns HTTP 200 with `Content-Type: application/json` and body exactly representing the specified JSON.",
-        "Requesting `GET /auth/google/start` returns HTTP 200 with `Content-Type: application/json` and the specified JSON payload.",
-        "Requesting `GET /auth/google/callback` returns HTTP 200 with `Content-Type: application/json` and the specified JSON payload.",
-        "Visiting `https://dart-scoring-backend-vab.caffeine.xyz/auth/google/start` shows JSON (not the HTML landing page)."
+        "`OPTIONS` requests for any path return status 204 and an empty response body.",
+        "`GET /health` returns status 200 with body exactly `{\"ok\":true}` (JSON).",
+        "`GET /auth/google/start` returns status 200 with body exactly `{\"ok\":true,\"message\":\"google start reached\"}` (JSON).",
+        "`GET /auth/google/callback` returns status 200 with body exactly `{\"ok\":true,\"message\":\"google callback reached\"}` (JSON).",
+        "Any other method/path returns status 404 with body exactly `{\"error\":\"not_found\"}` (JSON)."
       ]
     },
     {
-      "id": "REQ-8",
-      "text": "For all other HTTP paths (non-matching routes), continue returning the existing HTML landing page response (status 200, `Content-Type: text/html`).",
+      "id": "REQ-13",
+      "text": "Add the following CORS headers to every `http_request` response (including 204 and 404): `Access-Control-Allow-Origin: *`, `Access-Control-Allow-Methods: GET,POST,PUT,OPTIONS`, `Access-Control-Allow-Headers: Content-Type, Authorization, X-ADMIN-TOKEN`.",
       "target": "backend",
       "source": {
         "messageIds": [
-          "msg-6"
+          "msg-5"
         ],
         "quotes": [
-          "Dla wszystkich innych ścieżek możesz dalej zwracać HTML landing page."
+          "3) Dodaj nagłówki CORS do KAŻDEJ odpowiedzi:\n   Access-Control-Allow-Origin: *\n   Access-Control-Allow-Methods: GET,POST,PUT,OPTIONS\n   Access-Control-Allow-Headers: Content-Type, Authorization, X-ADMIN-TOKEN"
         ]
       },
       "acceptanceCriteria": [
-        "Any `GET` request to an unknown path (e.g., `/`, `/unknown`) returns HTML landing page content (not JSON).",
-        "The new JSON routes do not regress the HTML fallback for other paths."
+        "Every response returned by `http_request` includes all three specified CORS headers.",
+        "CORS headers are present on `OPTIONS` 204 responses as well as all JSON 200/404 responses."
       ]
     },
     {
-      "id": "REQ-9",
-      "text": "Add CORS headers to all JSON responses returned by the Motoko HTTP handler:\n- `Access-Control-Allow-Origin: *`\n- `Access-Control-Allow-Methods: GET,POST,PUT,OPTIONS`\n- `Access-Control-Allow-Headers: Content-Type, Authorization, X-ADMIN-TOKEN`",
+      "id": "REQ-14",
+      "text": "Disable/remove the HTML landing page response from the canister HTTP handler so that no path returns an HTML page; non-matching routes must return the JSON 404 response instead.",
       "target": "backend",
       "source": {
         "messageIds": [
-          "msg-6"
+          "msg-5"
         ],
         "quotes": [
-          "Dodaj CORS do odpowiedzi JSON:\nAccess-Control-Allow-Origin: *\nAccess-Control-Allow-Methods: GET,POST,PUT,OPTIONS\nAccess-Control-Allow-Headers: Content-Type, Authorization, X-ADMIN-TOKEN"
+          "4) Usuń/wyłącz serwowanie HTML landing page (na razie).\n   Priorytet: endpointy mają działać.",
+          "Obecnie niezależnie od ścieżki backend zwraca stronę HTML (\"Professional Dart Scoring API\"),\nczyli http routing nie jest podpięty."
         ]
       },
       "acceptanceCriteria": [
-        "Each JSON endpoint response includes all three specified CORS headers with exactly the specified values."
-      ]
-    },
-    {
-      "id": "REQ-10",
-      "text": "Handle `OPTIONS` requests for any path in the Motoko HTTP handler by returning status `204` with the specified CORS headers and an empty body.",
-      "target": "backend",
-      "source": {
-        "messageIds": [
-          "msg-6"
-        ],
-        "quotes": [
-          "Obsłuż OPTIONS dla dowolnej ścieżki: zwróć 204 + nagłówki CORS."
-        ]
-      },
-      "acceptanceCriteria": [
-        "Any `OPTIONS` request (e.g., `OPTIONS /health`, `OPTIONS /anything`) returns HTTP 204 with an empty body.",
-        "The `OPTIONS` response includes `Access-Control-Allow-Origin`, `Access-Control-Allow-Methods`, and `Access-Control-Allow-Headers` with the exact specified values."
+        "Visiting `https://dart-scoring-backend-vab.caffeine.xyz/health` returns JSON and does not render an HTML page.",
+        "Visiting `https://dart-scoring-backend-vab.caffeine.xyz/auth/google/start` returns JSON and does not render an HTML page.",
+        "Any non-matching path returns JSON 404 `{\"error\":\"not_found\"}` and does not return HTML."
       ]
     }
   ],
   "constraints": [
-    "Backend must remain a single Motoko actor in `backend/main.mo` (no additional backend services).",
-    "Only create `backend/migration.mo` if a state migration is required; this change should not require any stable-state migration."
+    "Backend must remain a single Motoko actor (all logic in `backend/main.mo`).",
+    "Do not edit any frontend immutable paths (not needed for this change)."
   ],
   "nonGoals": [
-    "Implementing real Google OAuth flow (tokens, redirects, exchanging codes) beyond returning the requested JSON test payloads.",
-    "Adding new frontend routes or changing the React landing page UI."
+    "Implementing real Google OAuth (these endpoints are only stub JSON responses).",
+    "Adding any new frontend UI changes.",
+    "Adding additional HTTP endpoints beyond those explicitly specified."
   ],
   "imageRequirements": {
     "required": [],
     "edits": []
-  },
-  "userProfileUpdate": {
-    "goalsToAdd": [],
-    "goalsToRemove": [],
-    "preferencesToAdd": [],
-    "preferencesToRemove": [],
-    "miscToAdd": [],
-    "miscToRemove": [],
-    "fieldsToSet": {},
-    "fieldsToDelete": []
   }
 }
